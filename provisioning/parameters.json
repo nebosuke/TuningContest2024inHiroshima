@@ -1,0 +1,14 @@
+{
+  "name": {
+    "value": "__resourceName__"
+  },
+  "adminUsername": {
+    "value": "__adminUserName__"
+  },
+  "adminPublicKey": {
+    "value": "__adminPublicKey__"
+  },
+  "imageName": {
+    "value": "__imageName__"
+  }
+}
