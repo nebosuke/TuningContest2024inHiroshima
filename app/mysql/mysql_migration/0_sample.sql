@@ -8,6 +8,11 @@ alter table user add fulltext ft_user_2 (kana) WITH PARSER ngram;
 alter table user add fulltext ft_user_3 (mail) WITH PARSER ngram;
 alter table user add fulltext ft_user_4 (goal) WITH PARSER ngram;
 
+alter table department add fulltext ft_department_1 (department_name) WITH PARSER ngram;
+alter table role add fulltext ft_role_1 (role_name) WITH PARSER ngram;
+alter table office add fulltext ft_office_1 (office_name) WITH PARSER ngram;
+alter table skill add fulltext ft_skill_1 (skill_name) WITH PARSER ngram;
+
 alter table department_role_member add index idx_department_role_member_1 (user_id,belong), add index idx_department_role_member_2 (role_id,belong);
 alter table skill_member add index idx_skill_member_1 (user_id,skill_id);
 alter table match_group_member add index idx_match_group_member_1 (user_id);
