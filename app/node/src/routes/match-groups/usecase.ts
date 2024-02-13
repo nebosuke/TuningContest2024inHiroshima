@@ -10,7 +10,7 @@ import {
   hasSkillNameRecord,
   insertMatchGroup,
 } from "./repository";
-import { getUserForFilter } from "../users/repository";
+import { getUserForFilter, getUserForMatchingGroup } from "../users/repository";
 
 export const checkSkillsRegistered = async (
   skillNames: string[]
@@ -37,7 +37,8 @@ export const createMatchGroup = async (
       console.error("not all members found before timeout");
       return;
     }
-    const candidate = await getUserForFilter();
+    // 要件に合致するユーザーをランダムに1件取得する
+    const candidate = await getUserForMatchingGroup(matchGroupConfig, owner);
     if (
       matchGroupConfig.departmentFilter !== "none" &&
       !isPassedDepartmentFilter(
@@ -46,7 +47,7 @@ export const createMatchGroup = async (
         candidate.departmentName
       )
     ) {
-      console.log(`${candidate.userId} is not passed department filter`);
+      console.log(`${candidate.userId} is not passed department filter (departmentFilter: ${matchGroupConfig.departmentFilter})`);
       continue;
     } else if (
       matchGroupConfig.officeFilter !== "none" &&

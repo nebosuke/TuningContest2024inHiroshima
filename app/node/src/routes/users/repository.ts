@@ -1,6 +1,6 @@
 import { RowDataPacket } from "mysql2";
 import pool from "../../util/mysql";
-import { SearchedUser, User, UserForFilter } from "../../model/types";
+import { SearchedUser, User, UserForFilter, MatchGroupConfig } from '../../model/types';
 import {
   convertToSearchedUser,
   convertToUserForFilter,
@@ -278,6 +278,60 @@ export const getUserForFilter = async (
       [userId]
     );
   }
+  const user = userRows[0];
+
+  const [officeNameRow] = await pool.query<RowDataPacket[]>(
+    `SELECT office_name FROM office WHERE office_id = ?`,
+    [user.office_id]
+  );
+  const [fileNameRow] = await pool.query<RowDataPacket[]>(
+    `SELECT file_name FROM file WHERE file_id = ?`,
+    [user.user_icon_id]
+  );
+  const [departmentNameRow] = await pool.query<RowDataPacket[]>(
+    `SELECT department_name FROM department WHERE department_id = (SELECT department_id FROM department_role_member WHERE user_id = ? AND belong = true)`,
+    [user.user_id]
+  );
+  const [skillNameRows] = await pool.query<RowDataPacket[]>(
+    `SELECT skill_name FROM skill WHERE skill_id IN (SELECT skill_id FROM skill_member WHERE user_id = ?)`,
+    [user.user_id]
+  );
+
+  user.office_name = officeNameRow[0].office_name;
+  user.file_name = fileNameRow[0].file_name;
+  user.department_name = departmentNameRow[0].department_name;
+  user.skill_names = skillNameRows.map((row) => row.skill_name);
+
+  return convertToUserForFilter(user);
+};
+
+export const getUserForMatchingGroup = async (
+  matchGroupConfig: MatchGroupConfig,
+  owner: UserForFilter
+): Promise<UserForFilter> => {
+  let userRows: RowDataPacket[];
+
+  while (true) {
+    if (matchGroupConfig.departmentFilter === 'onlyMyDepartment') {
+      // 同一部署のユーザーを取得
+      [userRows] = await pool.query<RowDataPacket[]>(
+        "select u1.user_id,u1.user_name,u1.office_id,u1.user_icon_id from user as u1" +
+        " inner join (select ceil(rand() * (select max(inc_id) from user)) as rand_id) as u2 on u1.inc_id>=u2.rand_id" +
+        " left join department_role_member as d1 on u1.user_id=d1.user_id and d1.belong=true" +
+        " left join department as d2 on d1.department_id=d2.department_id" + 
+        " where d2.department_id=? limit 1;",
+        [owner.departmentName]
+      );
+    } else {
+      [userRows] = await pool.query<RowDataPacket[]>(
+        "select u1.user_id,u1.user_name,u1.office_id,u1.user_icon_id from user as u1 inner join (select ceil(rand() * (select max(inc_id) from user)) as rand_id) as u2 on u1.inc_id>=u2.rand_id order by u1.inc_id limit 1"
+      );
+    }
+    if (userRows.length > 0) {
+      break;
+    }
+  }
+
   const user = userRows[0];
 
   const [officeNameRow] = await pool.query<RowDataPacket[]>(
